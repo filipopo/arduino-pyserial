@@ -1,6 +1,6 @@
 uint8_t irn = 255;
 uint8_t iri = 0;
-uint8_t ir[2][20];
+uint8_t ir[4][21];
 
 void setup() {
   Serial.begin(19200);
@@ -10,17 +10,16 @@ uint8_t readw() {
   if (irn == 255)
     return Serial.read();
   else
-    return ir[irn - 2][iri++];
+    return ir[irn][iri++];
 }
 
 void pinmode() {
-  uint8_t pin = readw();
-  pinMode(pin, readw());
+  pinMode(readw(), readw());
 }
 
 void pinwrite() {
   uint8_t pin = readw();
-  uint8_t value = readw();;
+  uint8_t value = readw();
 
   if (readw())
     analogWrite(pin, value);
@@ -38,31 +37,27 @@ void pinread() {
 }
 
 void delayf() {
-  delay(readw());
+  delay((readw() << 8) + readw());
 }
 
 void echo() {
-  uint8_t cc = readw();
-  while (cc) {
+  uint8_t bcount = readw();
+  while (bcount) {
     Serial.print((char)readw());
-    cc--;
+    bcount--;
   }
   Serial.println();
 }
 
-void (*reset)() = 0;
-
-void (*interrupt[])() = {
+void (*interrupta[])() = {
+  interrupt0,
+  interrupt1,
   interrupt2,
   interrupt3
 };
 
 void attachinterrupt() {
-  uint8_t bcount = readw();
-  uint8_t pin = readw();
-
-  attachInterrupt(digitalPinToInterrupt(pin), (*interrupt[pin - 2]), readw());
-  Serial.readBytes(ir[pin - 2], bcount);
+  attachInterrupt(digitalPinToInterrupt(readw()), (*interrupta[readw()]), readw());
 }
 
 void detachinterrupt() {
@@ -70,7 +65,28 @@ void detachinterrupt() {
 }
 
 void delaymicroseconds() {
-  delayMicroseconds(readw());
+  delayMicroseconds((readw() << 8) + readw());
+}
+
+void writef() {
+  Serial.write(readw());
+}
+
+void setinterrupt() {
+  uint8_t bcount = readw();
+  uint8_t i = readw();
+
+  Serial.readBytes(ir[i], bcount);
+  ir[i][20] = bcount;
+}
+
+void runinterrupt() {
+  uint8_t i = readw();
+  if (readw())
+    while(1)
+      interrupt(i);
+  else
+    interrupt(i);
 }
 
 void (*funcs[])() = {
@@ -79,30 +95,41 @@ void (*funcs[])() = {
   pinread,
   delayf,
   echo,
-  reset,
+  0,
   attachinterrupt,
   detachinterrupt,
-  delaymicroseconds
+  delaymicroseconds,
+  writef,
+  setinterrupt,
+  runinterrupt
 };
 
-void command() {
-  (*funcs[readw()])();
+void interrupt(uint8_t i) {
+  irn = i;
+  while (iri < ir[irn][20])
+    (*funcs[readw()])();
   irn = 255;
   iri = 0;
 }
 
+void interrupt0() {
+  interrupt(0);
+}
+
+void interrupt1() {
+  interrupt(1);
+}
+
 void interrupt2() {
-  irn = 2;
-  command();
+  interrupt(2);
 }
 
 void interrupt3() {
-  irn = 3;
-  command();
+  interrupt(3);
 }
 
 void loop() {
   if (Serial.available())
-    command();
+    (*funcs[readw()])();
   delay(50);
 }
