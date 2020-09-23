@@ -14,7 +14,8 @@ uint8_t readw() {
 }
 
 void pinmode() {
-  pinMode(readw(), readw());
+  uint8_t pin = readw();
+  pinMode(pin, readw());
 }
 
 void pinwrite() {
@@ -57,7 +58,9 @@ void (*interrupta[])() = {
 };
 
 void attachinterrupt() {
-  attachInterrupt(digitalPinToInterrupt(readw()), (*interrupta[readw()]), readw());
+  uint8_t pin = readw();
+  uint8_t i = readw();
+  attachInterrupt(digitalPinToInterrupt(pin), (*interrupta[i]), readw());
 }
 
 void detachinterrupt() {

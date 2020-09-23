@@ -8,9 +8,10 @@ class arduino:
     def __init__(self, COM = None, baudrate = 19200):
         if COM == None:
             try:
-                COM = comports()[0][0]
-                if len(comports()) > 1:
-                    print('Multiple serial devices detected')
+                if len(comports()) < 2:
+                    COM = comports()[0][0]
+                else:
+                    COM = input('Multiple serial devices detected, enter port:\n')
             except IndexError:
                 print('No serial devices connected')
                 sleep(1)
@@ -19,51 +20,59 @@ class arduino:
         try:
             self.conn = Serial(COM, baudrate = baudrate, timeout = 1)
         except SerialException as ex:
-            print('Error on', COM + ':', strerror(ex.errno))
+            if ex.errno == None:
+                err = 'No such device'
+            else:
+                err = strerror(ex.errno)
+            print('Error on', COM + ':', err)
             sleep(1)
             exit()
 
         self.switcher = {
-            'pinmode': lambda cc, dry: self.transcode(cc, 2, dry),
-            'pinwrite': lambda cc, dry: self.transcode(cc, 3, dry),
-            'pinread': lambda cc, dry: self.transcode(cc, 2, dry),
-            'delay': lambda cc, dry: self.transcode(cc, 1, ry),
-            'echo': lambda cc, dry: self.transcode(cc, dry = dry),
-            'reset': lambda cc, dry: self.transcode(cc, 0, dry),
-            'attachinterrupt': lambda cc, dry: self.transcode(cc, 3, dry),
-            'detachInterrupt': lambda cc, dry: self.transcode(cc, 1, dry),
-            'delaymicroseconds': lambda cc, dry: self.transcode(cc, 1, dry),
-            'write': lambda cc, dry: self.transcode(cc, 1, dry),
-            'setinterrupt': lambda cc, dry: self.transcode(cc, 1, dry),
-            'runinterrupt': lambda cc, dry: self.transcode(cc, 2, dry),
-            'read': lambda cc, dry: self.read(),
-            'help': lambda cc, dry: self.helpf()
+            'pinmode': 2,
+            'pinwrite': 3,
+            'pinread': 2,
+            'delay': 1,
+            'echo': None,
+            'reset': 0,
+            'attachinterrupt': 3,
+            'detachInterrupt': 1,
+            'delaymicroseconds': 1,
+            'write': 1,
+            'setinterrupt': 1,
+            'runinterrupt': 2
         }
         sleep(1)
 
-    def transcode(self, temp, arr = None, dry = 0):
-        if type(temp) != list:
-            temp = [temp]
-        temp[0] = list(self.switcher.keys()).index(temp[0])
-
+    def transcode(self, cc, dry = 0):
         bcount = 0
-        if temp[0] == 4:
-            bcount = len(temp[1])
-        elif temp[0] in [3, 8] and temp[1] < '256':
-            temp.insert(1, 0)
-            arr += 1
-        elif temp[0] == 10:
-            for j in range(1, len(self.ccs)):
-                bcount += len(self.send(self.ccs[j], 1))
+        if 'echo' in cc:
+            cc = cc.split(maxsplit = 1)
+            bcount = len(cc[1])
+        else:
+            cc = cc.lower()
+            cc = cc.split()
+
+        arr = self.switcher.get(cc[0], None)
+        cc[0] = list(self.switcher.keys()).index(cc[0])
+        if type(cc) == list:
+            cc[1] = int(cc[1])
+            if cc[0] in [3, 8] and cc[1] < 256:
+                cc.insert(1, 0)
+                arr += 1
+            elif cc[0] == 10:
+                bcount = len(b''.join(self.send(';'.join(self.ccs[1:]), 1)))
+        else:
+            cc = [cc]
 
         if bcount:
-            temp.insert(1, bcount)
+            cc.insert(1, bcount)
             if arr != None:
                 arr += 1
 
         if arr != None:
-            if arr != len(temp[1:]):
-                raise KeyError
+            if arr != len(cc[1:]):
+                raise AttributeError
 
             replacer = {
                 'input_pullup': 2,
@@ -81,61 +90,61 @@ class arduino:
                 'once': 0
             }
 
-            for i in range(0, len(temp)):
+            for i in range(0, len(cc)):
                 for j in replacer.keys():
-                    if temp[i] == j:
-                        temp[i] = replacer[j]
+                    if cc[i] == j:
+                        cc[i] = replacer[j]
                         break
 
-                temp[i] = int(temp[i])
-                if temp[i] < 256:
+                cc[i] = int(cc[i])
+                if cc[i] < 256:
                     arr = 1
                 else:
                     arr = 2
-                temp[i] = temp[i].to_bytes(arr, 'big')
+                cc[i] = cc[i].to_bytes(arr, 'big')
 
-            temp = b''.join(temp)
+            cc = b''.join(cc)
         else:
-            temp[0] = chr(temp[0])
+            cc[0] = chr(cc[0])
             if bcount:
-                temp[1] = chr(temp[1])
-            temp = ''.join(temp).encode('ascii')
+                cc[1] = chr(cc[1])
+            cc = ''.join(cc).encode('ascii')
 
         if dry:
-            return temp
+            return cc
         else:
-            self.conn.write(temp)
+            self.conn.write(cc)
 
     def read(self):
         sleep(0.1)
         while self.conn.in_waiting:
             print(self.conn.readline()[:-1].decode('ascii'))
 
-    def helpf(self):
+    def help(self):
         print('No help')
 
-    def send(self, ccs, sync = 1, dry = 0):
+    def send(self, ccs, dry = 0):
         ccs = ccs.split(';')
-        if not dry:
-            self.ccs = ccs
-        for i in ccs:
-            if 'echo' in i:
-                i = i.split(maxsplit = 1)
-            else:
-                i = i.lower()
-                i = i.split()
-
+        self.ccs = ccs
+        if dry:
+            ccs = []
+        for i in self.ccs:
             try:
-                ccs = self.switcher[i[0]](i, dry)
-                if dry:
-                    return ccs
-
-            except (KeyError, ValueError):
-                print('Invalid command,', i)
-                if 'setinterrupt' in i:
+                temp = i.split(maxsplit = 1)[0]
+                if temp in self.switcher.keys():
+                    temp = self.transcode(i, dry)
+                    if dry:
+                        ccs.append(temp)
+                else:
+                    getattr(self, temp)()
+            except (AttributeError, ValueError):
+                print('Invalid command:')
+                if 'setinterrupt' == temp:
                     break
             except IndexError:
                 print('Write a command')
+        if dry:
+            return ccs
 
 if __name__ == '__main__':
     a = arduino()
