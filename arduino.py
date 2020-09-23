@@ -56,8 +56,7 @@ class arduino:
         arr = self.switcher.get(cc[0], None)
         cc[0] = list(self.switcher.keys()).index(cc[0])
         if type(cc) == list:
-            cc[1] = int(cc[1])
-            if cc[0] in [3, 8] and cc[1] < 256:
+            if cc[0] in [3, 8] and int(cc[1]) < 256:
                 cc.insert(1, 0)
                 arr += 1
             elif cc[0] == 10:
@@ -137,10 +136,10 @@ class arduino:
                         ccs.append(temp)
                 else:
                     getattr(self, temp)()
-            except (AttributeError, ValueError):
-                print('Invalid command:')
-                if 'setinterrupt' == temp:
-                    break
+           # except (AttributeError, ValueError):
+           #     print('Invalid command:')
+           #     if 'setinterrupt' == temp:
+           #         break
             except IndexError:
                 print('Write a command')
         if dry:
