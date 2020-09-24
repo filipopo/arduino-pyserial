@@ -7,21 +7,23 @@ from serial.tools.list_ports import comports
 class arduino:
     def __init__(self, COM = None, baudrate = 19200):
         if COM == None:
-            try:
-                if len(comports()) < 2:
+            if len(comports()) < 2:
+                try:
                     COM = comports()[0][0]
-                else:
-                    COM = input('Multiple serial devices detected, enter port:\n')
-            except IndexError:
-                print('No serial devices connected')
-                sleep(1)
-                exit()
+                except IndexError:
+                    print('No serial devices connected')
+                    sleep(1)
+                    exit()
+            else:
+                for i in comports():
+                    print(i)
+                COM = input('Enter port:\n')
 
         try:
             self.conn = Serial(COM, baudrate = baudrate, timeout = 1)
         except SerialException as ex:
             if ex.errno == None:
-                err = 'No such device'
+                err = 'No such device available'
             else:
                 err = strerror(ex.errno)
             print('Error on', COM + ':', err)
@@ -40,7 +42,9 @@ class arduino:
             'delaymicroseconds': 1,
             'write': 1,
             'setinterrupt': 1,
-            'runinterrupt': 2
+            'runinterrupt': 2,
+            'pinchange': 1,
+            'pinclick': 2
         }
         sleep(1)
 
@@ -55,14 +59,14 @@ class arduino:
 
         arr = self.switcher.get(cc[0], None)
         cc[0] = list(self.switcher.keys()).index(cc[0])
-        if type(cc) == list:
-            if cc[0] in [3, 8] and int(cc[1]) < 256:
-                cc.insert(1, 0)
-                arr += 1
-            elif cc[0] == 10:
-                bcount = len(b''.join(self.send(';'.join(self.ccs[1:]), 1)))
-        else:
-            cc = [cc]
+        if cc[0] in [3, 8] and int(cc[1]) < 256:
+            cc.insert(1, 0)
+            arr += 1
+        elif cc[0] == 10:
+            bcount = len(b''.join(self.send(';'.join(self.ccs[1:]), 1)))
+        elif cc[0] == 13 and int(cc[2]) < 256:
+            cc.insert(2, 0)
+            arr += 1
 
         if bcount:
             cc.insert(1, bcount)
@@ -96,17 +100,13 @@ class arduino:
                         break
 
                 cc[i] = int(cc[i])
-                if cc[i] < 256:
-                    arr = 1
-                else:
-                    arr = 2
+                arr = 1 + int(cc[i] > 255)
                 cc[i] = cc[i].to_bytes(arr, 'big')
 
             cc = b''.join(cc)
         else:
-            cc[0] = chr(cc[0])
-            if bcount:
-                cc[1] = chr(cc[1])
+            for i in range(1 + int(bcount > 0)):
+                cc[i] = chr(cc[i])
             cc = ''.join(cc).encode('ascii')
 
         if dry:
@@ -125,21 +125,19 @@ class arduino:
     def send(self, ccs, dry = 0):
         ccs = ccs.split(';')
         self.ccs = ccs
-        if dry:
-            ccs = []
+        ccs = []
         for i in self.ccs:
             try:
-                temp = i.split(maxsplit = 1)[0]
-                if temp in self.switcher.keys():
-                    temp = self.transcode(i, dry)
+                if i.split(maxsplit = 1)[0] in self.switcher.keys():
+                    i = self.transcode(i, dry)
                     if dry:
-                        ccs.append(temp)
+                        ccs.append(i)
                 else:
-                    getattr(self, temp)()
-           # except (AttributeError, ValueError):
-           #     print('Invalid command:')
-           #     if 'setinterrupt' == temp:
-           #         break
+                    getattr(self, i)()
+            except (AttributeError, ValueError):
+                print('Invalid command:')
+                if 'setinterrupt' in i:
+                    break
             except IndexError:
                 print('Write a command')
         if dry:
