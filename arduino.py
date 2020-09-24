@@ -1,4 +1,4 @@
-from sys import exit
+from sys import argv, exit
 from time import sleep
 from os import strerror
 from serial import Serial, SerialException
@@ -7,17 +7,20 @@ from serial.tools.list_ports import comports
 class arduino:
     def __init__(self, COM = None, baudrate = 19200):
         if COM == None:
-            if len(comports()) < 2:
-                try:
-                    COM = comports()[0][0]
-                except IndexError:
-                    print('No serial devices connected')
-                    sleep(1)
-                    exit()
+            if len(argv) > 1:
+                COM = argv[1]
             else:
-                for i in comports():
-                    print(i)
-                COM = input('Enter port:\n')
+                if len(comports()) < 2:
+                    try:
+                        COM = comports()[0][0]
+                    except IndexError:
+                        print('No serial devices connected')
+                        sleep(1)
+                        exit()
+                else:
+                    for i in comports():
+                        print(i)
+                    COM = input('Enter port:\n')
 
         try:
             self.conn = Serial(COM, baudrate = baudrate, timeout = 1)
