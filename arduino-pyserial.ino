@@ -6,7 +6,7 @@ void setup() {
   Serial.begin(19200);
   irn = 255;
   iri = 0;
-  for (uint8_t i = 0; i <4; i++)
+  for (uint8_t i = 0; i < 4; i++)
     ir[i][20] = 0;
   for (uint8_t i = 0; i < 14; i++)
     pinMode(i, INPUT);
