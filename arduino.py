@@ -5,7 +5,7 @@ from serial import Serial, SerialException
 from serial.tools.list_ports import comports
 
 class arduino:
-    def __init__(self, COM = None, baudrate = 19200):
+    def __init__(self, COM = None, baudrate = 9600):
         if COM == None:
             if len(argv) > 1:
                 COM = argv[1]
@@ -60,7 +60,7 @@ class arduino:
             cc = cc.lower()
             cc = cc.split()
 
-        arr = self.switcher.get(cc[0], None)
+        arr = self.switcher[cc[0]]
         cc[0] = list(self.switcher.keys()).index(cc[0])
         if cc[0] in [3, 8] and int(cc[1]) < 256:
             cc.insert(1, 0)
@@ -90,10 +90,14 @@ class arduino:
                 'falling': 2,
                 'rising': 3,
                 'led_builtin': 13,
+                'a0': 14,
+                'a1': 15,
+                'a2': 16,
+                'a3': 17,
+                'a4': 18,
+                'a5': 19,
                 'analog': 1,
-                'digital': 0,
-                'forever': 1,
-                'once': 0
+                'digital': 0
             }
 
             for i in range(0, len(cc)):
@@ -116,11 +120,13 @@ class arduino:
             return cc
         else:
             self.conn.write(cc)
+            return 0
 
     def read(self):
         sleep(0.1)
         while self.conn.in_waiting:
             print(self.conn.readline()[:-1].decode('ascii'))
+            sleep(0.1)
 
     def help(self):
         print('No help')
@@ -129,22 +135,21 @@ class arduino:
         ccs = ccs.split(';')
         self.ccs = ccs
         ccs = []
-        for i in self.ccs:
+        for cc in self.ccs:
             try:
-                if i.split(maxsplit = 1)[0] in self.switcher.keys():
-                    i = self.transcode(i, dry)
-                    if dry:
-                        ccs.append(i)
+                if cc.split(maxsplit = 1)[0] in self.switcher.keys():
+                    ccs.append(self.transcode(cc, dry))
                 else:
-                    getattr(self, i)()
-            except (AttributeError, ValueError):
-                print('Invalid command:')
-                if 'setinterrupt' in i:
+                    getattr(self, cc)()
+            except (AttributeError, ValueError, TypeError):
+                print('Invalid command')
+                ccs.append(1)
+                if 'setinterrupt' in cc:
                     break
             except IndexError:
                 print('Write a command')
-        if dry:
-            return ccs
+
+        return ccs
 
 if __name__ == '__main__':
     a = arduino()

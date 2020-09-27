@@ -3,12 +3,12 @@ uint8_t iri;
 uint8_t ir[4][21];
 
 void setup() {
-  Serial.begin(19200);
+  Serial.begin(9600);
   irn = 255;
   iri = 0;
   for (uint8_t i = 0; i < 4; i++)
     ir[i][20] = 0;
-  for (uint8_t i = 0; i < 14; i++)
+  for (uint8_t i = 0; i < 20; i++)
     pinMode(i, INPUT);
 }
 
@@ -80,6 +80,7 @@ void delaymicroseconds() {
 
 void writef() {
   Serial.write(readw());
+  Serial.println();
 }
 
 void setinterrupt() {
@@ -92,11 +93,11 @@ void setinterrupt() {
 
 void runinterrupt() {
   uint8_t i = readw();
-  if (readw())
-    while(1)
-      interrupt(i);
-  else
+  uint8_t times = readw();
+  while(times) {
     interrupt(i);
+    times--;
+  }
 }
 
 void pinchange() {
