@@ -13,10 +13,10 @@ void setup() {
 }
 
 uint8_t readw() {
-  delay(10);
-  if (irn == 255)
+  if (irn == 255) {
+    delay(10);
     return Serial.read();
-  else
+  } else
     return ir[irn][iri++];
 }
 
