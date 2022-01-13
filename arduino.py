@@ -1,6 +1,7 @@
 from sys import argv, exit
 from time import sleep
 from os import strerror
+from re import split
 from serial import Serial, SerialException
 from serial.tools.list_ports import comports
 
@@ -38,16 +39,16 @@ class arduino:
             'pinwrite': 3,
             'pinread': 2,
             'delay': 1,
-            'echo': None,
+            'delaymicroseconds': 1,
             'reset': 0,
+            'write': 1,
+            'pinchange': 1,
+            'pinclick': 2,
+            'echo': None,
             'attachinterrupt': 3,
             'detachInterrupt': 1,
-            'delaymicroseconds': 1,
-            'write': 1,
             'setinterrupt': 1,
-            'runinterrupt': 2,
-            'pinchange': 1,
-            'pinclick': 2
+            'runinterrupt': 2
         }
         sleep(1)
 
@@ -62,14 +63,14 @@ class arduino:
 
         arr = self.switcher[cc[0]]
         cc[0] = list(self.switcher.keys()).index(cc[0])
-        if cc[0] in [3, 8] and int(cc[1]) < 256:
+        if cc[0] in [3, 4] and int(cc[1]) < 256:
             cc.insert(1, 0)
             arr += 1
-        elif cc[0] == 10:
-            bcount = len(b''.join(self.send(';'.join(self.ccs[1:]), 1)))
-        elif cc[0] == 13 and int(cc[2]) < 256:
+        elif cc[0] == 8 and int(cc[2]) < 256:
             cc.insert(2, 0)
             arr += 1
+        elif cc[0] == 12:
+            bcount = len(b''.join(self.send(';'.join(self.ccs[1:]), 1)))
 
         if bcount:
             cc.insert(1, bcount)
@@ -96,6 +97,10 @@ class arduino:
                 'a3': 17,
                 'a4': 18,
                 'a5': 19,
+                'bin': 2,
+                'oct': 8,
+                'dec': 10,
+                'hex': 16,
                 'analog': 1,
                 'digital': 0
             }
@@ -132,7 +137,7 @@ class arduino:
         print('No help')
 
     def send(self, ccs, dry = 0):
-        ccs = ccs.split(';')
+        ccs = split(' *; *', ccs)
         self.ccs = ccs
         ccs = []
         for cc in self.ccs:

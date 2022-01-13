@@ -16,8 +16,8 @@ uint8_t readw() {
   if (irn == 255) {
     delay(10);
     return Serial.read();
-  } else
-    return ir[irn][iri++];
+  }
+  return ir[irn][iri++];
 }
 
 void pinmode() {
@@ -48,6 +48,27 @@ void delayf() {
   delay((readw() << 8) + readw());
 }
 
+void delaymicroseconds() {
+  delayMicroseconds((readw() << 8) + readw());
+}
+
+void writef() {
+  Serial.write(readw());
+  Serial.println();
+}
+
+void pinchange() {
+  uint8_t pin = readw();
+  digitalWrite(pin, !digitalRead(pin));
+}
+
+void pinclick() {
+  uint8_t pin = readw();
+  digitalWrite(pin, HIGH);
+  delayf();
+  digitalWrite(pin, LOW);
+}
+
 void echo() {
   uint8_t bcount = readw();
   while (bcount) {
@@ -74,15 +95,6 @@ void detachinterrupt() {
   detachInterrupt(digitalPinToInterrupt(readw()));
 }
 
-void delaymicroseconds() {
-  delayMicroseconds((readw() << 8) + readw());
-}
-
-void writef() {
-  Serial.write(readw());
-  Serial.println();
-}
-
 void setinterrupt() {
   uint8_t bcount = readw();
   uint8_t i = readw();
@@ -100,33 +112,21 @@ void runinterrupt() {
   }
 }
 
-void pinchange() {
-  uint8_t pin = readw();
-  digitalWrite(pin, !digitalRead(pin));
-}
-
-void pinclick() {
-  uint8_t pin = readw();
-  digitalWrite(pin, HIGH);
-  delayf();
-  digitalWrite(pin, LOW);
-}
-
 void (*funcs[])() = {
   pinmode,
   pinwrite,
   pinread,
   delayf,
-  echo,
+  delaymicroseconds,
   0,
+  writef,
+  pinchange,
+  pinclick,
+  echo,
   attachinterrupt,
   detachinterrupt,
-  delaymicroseconds,
-  writef,
   setinterrupt,
-  runinterrupt,
-  pinchange,
-  pinclick
+  runinterrupt
 };
 
 void interrupt(uint8_t i) {
@@ -156,5 +156,4 @@ void interrupt3() {
 void loop() {
   if (Serial.available())
     (*funcs[readw()])();
-  delay(50);
 }
