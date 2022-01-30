@@ -35,62 +35,57 @@ void sendByte(uint8_t data) {
   UDR0 = data;
 }
 
+void sendBytes(uint8_t *data, uint8_t len) {
+  for (uint8_t i = 0; i < len; i++)
+    sendByte(data[i]);
+}
+
 void pinmode() {
   //pinmode 2 output
-  sendByte(0);
-  sendByte(2);
-  sendByte(1);
+  uint8_t data = {0, 2, 1};
+  sendBytes(data, 3);
 
   //pinmode 3 output
-  sendByte(0);
-  sendByte(3);
-  sendByte(1);
+  data = {0, 3, 1};
+  sendBytes(data, 3);
 }
 
 void pin2on() {
   //pinwrite 2 high digital
-  sendByte(1);
-  sendByte(2);
-  sendByte(1);
-  sendByte(0);
+  uint8_t data = {1, 2, 1, 0};
+  sendBytes(data, 4);
 }
 
 void pin2off() {
   //pinwrite 2 low digital
-  sendByte(1);
-  sendByte(2);
-  sendByte(0);
-  sendByte(0);
+  uint8_t data = {1, 2, 0, 0};
+  sendBytes(data, 4);
 }
 
 void changepins() {
   //pinchange 2
-  sendByte(7);
-  sendByte(2);
+  uint8_t data = {7, 2};
+  sendBytes(data, 2);
 
   //delay 1000, leading zeros don't change anything but make it more readable
-  sendByte(4);
-  sendByte(0b00000011);
-  sendByte(0b11101000);
+  data = {4, 0b00000011, 0b11101000};
+  sendBytes(data, 3);
 
   //pinchange 2
-  sendByte(7);
-  sendByte(2);
+  data = {7, 2};
+  sendBytes(data, 2);
 
   //pinclick 3 1000
-  sendByte(8);
-  sendByte(3);
-  sendByte(0b00000011);
-  sendByte(0b11101000);
+  data = {8, 3, 0b00000011, 0b11101000);
+  sendBytes(data, 4);
 
   //delaymicroseconds 16000
-  sendByte(5);
-  sendByte(0b00111110);
-  sendByte(0b10000000);
+  data = {5, 0b00111110, 0b10000000);
+  sendBytes(data, 3);
 
   //pinchange 2
-  sendByte(7);
-  sendByte(2);
+  data = {7, 2};
+  sendBytes(data, 2);
 
   //prevent buffer overflow because of sending delay(s)
   execute = 0;
@@ -98,20 +93,18 @@ void changepins() {
 
 void write() {
   //write 33
-  sendByte(6);
-  sendByte(33);
+  uint8_t data = {6, 33};
+  sendBytes(data, 2);
 
   //pinread 2
-  sendByte(2);
-  sendByte(2);
+  data = {2, 2};
+  sendBytes(data, 2);
 }
 
 void reset() {
   //pinwrite 4 high digital
-  sendByte(1);
-  sendByte(4);
-  sendByte(1);
-  sendByte(0);
+  uint8_t data = {1, 4, 1, 0};
+  sendBytes(data, 4);
 
   //reset
   sendByte(5);
