@@ -4,11 +4,11 @@ uint8_t ir[4][21];
 
 void setup() {
   Serial.begin(9600);
-  irn = 255;
-  iri = 0;
-  for (uint8_t i = 0; i < 4; i++)
-    ir[i][20] = 0;
-  for (uint8_t i = 0; i < 20; i++)
+  irn=255;
+  iri=0;
+  for (uint8_t i=0; i < 4; i++)
+    ir[i][20]=0;
+  for (uint8_t i=0; i < 20; i++)
     pinMode(i, INPUT);
 }
 
@@ -21,13 +21,13 @@ uint8_t readw() {
 }
 
 void pinmode() {
-  uint8_t pin = readw();
+  uint8_t pin=readw();
   pinMode(pin, readw());
 }
 
 void pinwrite() {
-  uint8_t pin = readw();
-  uint8_t value = readw();
+  uint8_t pin=readw();
+  uint8_t value=readw();
 
   if (readw())
     analogWrite(pin, value);
@@ -36,7 +36,7 @@ void pinwrite() {
 }
 
 void pinread() {
-  uint8_t pin = readw();
+  uint8_t pin=readw();
 
   if (readw())
     Serial.println(analogRead(pin));
@@ -58,19 +58,19 @@ void writef() {
 }
 
 void pinchange() {
-  uint8_t pin = readw();
+  uint8_t pin=readw();
   digitalWrite(pin, !digitalRead(pin));
 }
 
 void pinclick() {
-  uint8_t pin = readw();
+  uint8_t pin=readw();
   digitalWrite(pin, HIGH);
   delayf();
   digitalWrite(pin, LOW);
 }
 
 void echo() {
-  uint8_t bcount = readw();
+  uint8_t bcount=readw();
   while (bcount) {
     Serial.print((char)readw());
     bcount--;
@@ -78,7 +78,7 @@ void echo() {
   Serial.println();
 }
 
-void (*interrupta[])() = {
+void (*interrupta[])()={
   interrupt0,
   interrupt1,
   interrupt2,
@@ -86,8 +86,8 @@ void (*interrupta[])() = {
 };
 
 void attachinterrupt() {
-  uint8_t pin = readw();
-  uint8_t i = readw();
+  uint8_t pin=readw();
+  uint8_t i=readw();
   attachInterrupt(digitalPinToInterrupt(pin), (*interrupta[i]), readw());
 }
 
@@ -96,23 +96,23 @@ void detachinterrupt() {
 }
 
 void setinterrupt() {
-  uint8_t bcount = readw();
-  uint8_t i = readw();
+  uint8_t bcount=readw();
+  uint8_t i=readw();
 
   Serial.readBytes(ir[i], bcount);
-  ir[i][20] = bcount;
+  ir[i][20]=bcount;
 }
 
 void runinterrupt() {
-  uint8_t i = readw();
-  uint8_t times = readw();
+  uint8_t i=readw();
+  uint8_t times=readw();
   while(times) {
     interrupt(i);
     times--;
   }
 }
 
-void (*funcs[])() = {
+void (*funcs[])()={
   pinmode,
   pinwrite,
   pinread,
@@ -130,11 +130,11 @@ void (*funcs[])() = {
 };
 
 void interrupt(uint8_t i) {
-  irn = i;
+  irn=i;
   while (iri < ir[irn][20])
     (*funcs[readw()])();
-  irn = 255;
-  iri = 0;
+  irn=255;
+  iri=0;
 }
 
 void interrupt0() {
