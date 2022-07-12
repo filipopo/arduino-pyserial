@@ -1,5 +1,4 @@
-#define BAUDRATE 9600
-#define UBRR_VALUE ((F_CPU / (BAUDRATE * 16UL)) - 1)
+#define UBRR_VALUE ((F_CPU / (9600 * 16UL)) - 1)
 
 uint8_t cc=255;
 bool execute=0;
