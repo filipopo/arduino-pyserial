@@ -1,15 +1,13 @@
 #include <ArduinoQueue.h>
 
-#define __movingSelection 5
+#define __moving 5
 
-ArduinoQueue<double> parallelQ(__movingSelection);
+ArduinoQueue<double> parallelQ(__moving);
 double parallelAverage=0.;
 
 void setup() {
-  // Set baud rate
   Serial.begin(9600);
-
-  for (int i=1; i <= __movingSelection; i++) {
+  for (int i=1; i <= __moving; i++) {
     parallelQ.enqueue(measureSpeed());
     parallelAverage += (parallelQ.getTail() - parallelAverage) / i;
   }
@@ -26,9 +24,8 @@ double measureSpeed() {
 }
 
 double replaceInAverage(double &average, ArduinoQueue<double> &q, double nValue) {
-  average=(__movingSelection * average - q.dequeue() + nValue) / __movingSelection;
+  average=(__moving * average - q.dequeue() + nValue) / __moving;
   q.enqueue(nValue);
-
   return average;
 }
 

@@ -4,17 +4,19 @@ uint8_t ir[4][21];
 
 void setup() {
   Serial.begin(9600);
+
   irn=255;
   iri=0;
   for (uint8_t i=0; i < 4; i++)
     ir[i][20]=0;
+
   for (uint8_t i=0; i < 20; i++)
     pinMode(i, INPUT);
 }
 
 uint8_t readw() {
   if (irn == 255) {
-    delay(10);
+    while (!Serial.available());
     return Serial.read();
   }
   return ir[irn][iri++];
@@ -75,6 +77,7 @@ void echo() {
     Serial.print((char)readw());
     bcount--;
   }
+
   Serial.println();
 }
 
@@ -106,6 +109,7 @@ void setinterrupt() {
 void runinterrupt() {
   uint8_t i=readw();
   uint8_t times=readw();
+
   while(times) {
     interrupt(i);
     times--;
@@ -154,6 +158,5 @@ void interrupt3() {
 }
 
 void loop() {
-  if (Serial.available())
-    (*funcs[readw()])();
+  (*funcs[readw()])();
 }

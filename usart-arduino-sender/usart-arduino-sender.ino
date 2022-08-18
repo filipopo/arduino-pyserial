@@ -10,8 +10,8 @@ void setup() {
   // Defaults to frame format of 8 data bits, no parity, 1 stop bit in asynchronous mode
   //UCSR0C |= (3 << UCSZ00);
 
-  // Enable USART reception and transmission and RC complete interrupt
-  UCSR0B |= (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+  // Enable USART transmissions
+  UCSR0B |= (1 << TXEN0);
 
   // Set pins 2 and 3 as input_pullup
   PORTD |= (1 << 2) | (1 << 3);
@@ -26,87 +26,75 @@ void setup() {
   EICRA |= (1 << ISC01) | (1 << ISC11);
 }
 
-void sendByte(uint8_t data) {
-  // Wait while previous byte is completed, for receiving the RXC0 bit would be checked instead of UDRE0
-  while (!(UCSR0A & (1 << UDRE0)));
-
-  // Transmit data
-  UDR0=data;
-}
-
-void sendBytes(uint8_t *data, uint8_t len) {
-  for (uint8_t i=0; i < len; i++)
-    sendByte(data[i]);
-}
-
 void pinmode() {
   //pinmode 2 output
-  uint8_t data={0, 2, 1};
-  sendBytes(data, 3);
+  uint8_t data[]={0, 2, 1};
+  Serial.write(data, 3);
 
   //pinmode 3 output
-  data={0, 3, 1};
-  sendBytes(data, 3);
+  uint8_t data2[]={0, 3, 1};
+  Serial.write(data2, 3);
+
+  execute=0;
 }
 
 void pin2on() {
   //pinwrite 2 high digital
-  uint8_t data={1, 2, 1, 0};
-  sendBytes(data, 4);
+  uint8_t data[]={1, 2, 1, 0};
+  Serial.write(data, 4);
 }
 
 void pin2off() {
   //pinwrite 2 low digital
-  uint8_t data={1, 2, 0, 0};
-  sendBytes(data, 4);
+  uint8_t data[]={1, 2, 0, 0};
+  Serial.write(data, 4);
 }
 
 void changepins() {
   //pinchange 2
-  uint8_t data={7, 2};
-  sendBytes(data, 2);
+  uint8_t data[]={7, 2};
+  Serial.write(data, 2);
 
   //delay 1000, leading zeros don't change anything but make it more readable
-  data={4, 0b00000011, 0b11101000};
-  sendBytes(data, 3);
+  uint8_t data2[]={4, 0b00000011, 0b11101000};
+  Serial.write(data2, 3);
 
   //pinchange 2
-  data={7, 2};
-  sendBytes(data, 2);
+  uint8_t data3[]={7, 2};
+  Serial.write(data3, 2);
 
   //pinclick 3 1000
-  data={8, 3, 0b00000011, 0b11101000);
-  sendBytes(data, 4);
+  uint8_t data4[]={8, 3, 0b00000011, 0b11101000);
+  Serial.write(data4, 4);
 
   //delaymicroseconds 16000
-  data={5, 0b00111110, 0b10000000);
-  sendBytes(data, 3);
+  uint8_t data5[]={4, 0b00111110, 0b10000000);
+  Serial.write(data5, 3);
 
   //pinchange 2
-  data={7, 2};
-  sendBytes(data, 2);
+  uint8_t data6[]={7, 2};
+  Serial.write(data6, 2);
 
   //prevent buffer overflow because of sending delay(s)
   execute=0;
 }
 
-void write() {
+void writef() {
   //write 33
-  uint8_t data={6, 33};
-  sendBytes(data, 2);
+  uint8_t data[]={6, 33};
+  Serial.write(data, 2);
 
   //pinread 2
-  data={2, 2};
-  sendBytes(data, 2);
+  uint8_t data2[]={2, 2};
+  Serial.write(data2, 2);
 }
 
 void reset() {
-  //pinwrite 4 high digital
-  uint8_t data={1, 4, 1, 0};
-  sendBytes(data, 4);
+  cc=255;
+  execute=0;
 
   //reset
-  sendByte(5);
+  Serial.write(5);
 }
 
 void (*commands[])()={
@@ -114,7 +102,7 @@ void (*commands[])()={
   pin2on,
   pin2off,
   changepins,
-  write,
+  writef,
   reset
 };
 
@@ -127,28 +115,20 @@ void loop() {
 
   if (execute)
     (*commands[cc])();
-  delay(2);
+  delay(10);
 }
 
-// INT0 interrupt service routine
+// INT0 interrupt service routine which will execute the next command
 ISR(INT0_vect) {
   // prevent segmentation fault
-  if (cc < 5)
+  if (cc < 5 || cc == 255)
     cc++;
   execute=1;
 }
 
-// INT1 interrupt service routine
+// INT1 interrupt service routine which will repeat the current command
 ISR(INT1_vect) {
   // prevent segmentation fault
   if (cc != 255)
     execute=1;
-}
-
-// RX Complete interrupt service routine
-ISR(USART_RX_vect) {
-  if (UDR0) {
-    cc=255;
-    execute=0;
-  }
 }
