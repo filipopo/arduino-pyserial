@@ -120,15 +120,23 @@ void loop() {
 
 // INT0 interrupt service routine which will execute the next command
 ISR(INT0_vect) {
-  // prevent segmentation fault
-  if (cc < 5 || cc == 255)
-    cc++;
-  execute=1;
+  // debouncing
+  delayMicroseconds(5000);
+  if (digitalRead(2) == 0) {
+    // prevent segmentation fault
+    if (cc < 5 || cc == 255)
+      cc++;
+    execute=1;
+  }
 }
 
 // INT1 interrupt service routine which will repeat the current command
 ISR(INT1_vect) {
-  // prevent segmentation fault
-  if (cc != 255)
-    execute=1;
+  // debouncing
+  delayMicroseconds(5000);
+  if (digitalRead(3) == 0) {
+    // prevent segmentation fault
+    if (cc != 255)
+      execute=1;
+  }
 }
