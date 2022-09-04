@@ -85,8 +85,8 @@ void writef() {
   Serial.write(data, 2);
 
   //pinread 2
-  uint8_t data2[]={2, 2};
-  Serial.write(data2, 2);
+  uint8_t data2[]={2, 2, 0};
+  Serial.write(data2, 3);
 }
 
 void reset() {
