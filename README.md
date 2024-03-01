@@ -1,3 +1,7 @@
 # arduino-pyserial
-Allows sending some commands over the seral port to arduino microcontrollers
-A project created to be my graduation thesis and it's application
+
+Researched serial protocol of the micro-controller ATmega328, performed experiments to identify and verify serial port behavior, developed application in Arduino and Python that allows sending and receiving commands between an Arduino board and another device
+
+The whitepaper can be seen here: https://www.researchgate.net/publication/364677470_Serijski_port_mikrokontrolera_ATmega328
+
+The presentation can be seen here: https://www.researchgate.net/publication/364677413_Serijski_port_mikrokontrolera_ATmega328_-_prezentacija
